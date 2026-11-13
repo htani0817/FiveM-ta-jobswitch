@@ -7,15 +7,19 @@ status: 実装済み（FiveM 実機で動作確認済み）
 aliases:
   - ta-jobswitch
   - tani-jobswitch
+related:
+  - "[[FiveM-Script/README|FiveM-Script 目次]]"
 ---
 
 # ta-jobswitch（ジョブ切り替え）
 
-Qbox サーバー向け。J キーで画面を開き、持っているジョブの中から「いまのジョブ」を選ぶ。出勤・退勤の切り替えと、ジョブを外すのも同じ画面でできる。管理者は「すべてのジョブ」画面から、jobs.lua にあるどのジョブ・階級にも自分で就ける。目次は [[FiveM-Script/README|FiveM-Script 目次]]。
+Qbox サーバー向け。J キーで画面を開き、持っているジョブの中から「いまのジョブ」を選ぶ。出勤・退勤の切り替えと、ジョブを外すのも同じ画面でできる。管理者は「すべてのジョブ」画面から、jobs.lua にあるどのジョブ・階級にも自分で就ける。
 
 旧名は `tani-jobswitch`（2026-11-13 に `ta-jobswitch` へ変えた）。旧名のまま入れているサーバーは、古いフォルダを消してから入れ直す。ジョブのデータは qbx_core が持っているので、引き継ぐものは無い。
 
-> [!success] 動作確認済み
+> [!NOTE]
+> **動作確認済み**
+>
 > FiveM の実機で動作を確認した。サーバー側の判定は疑似環境でも確かめ（下の「テスト」）、画面はブラウザでも描画して確かめている。
 
 qbx_core 1.24.1 に標準で入っているマルチジョブ（`PlayerData.jobs` に複数持ち、`SetPlayerPrimaryJob` でメインを選ぶ）をそのまま使う。新しいデータベースの表は作らない。
@@ -54,7 +58,9 @@ set qbx:max_jobs_per_player 5 # Sets the number of jobs per player
 
 3. 管理者の判定は ACE の `admin`（permissions.cfg の `add_ace group.admin admin allow`）を使うので、追加の設定は無い
 
-> [!note] キーの割り当て
+> [!NOTE]
+> **キーの割り当て**
+>
 > `Config.Key` は、まだこのキーを割り当てていないプレイヤーにだけ効く（FiveM の `RegisterKeyMapping` の仕様）。あとで変えた場合、すでに遊んだプレイヤーは「設定 → キー割り当て → FiveM → ジョブ切り替え」で各自変える。
 
 ## 設定（config.lua）
