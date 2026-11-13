@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ta-jobswitch</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="dock" class="dock hidden">
+
+        <!-- ジョブ切り替え（一般プレイヤー） -->
+        <section id="main" class="panel" aria-label="ジョブ切り替え">
+            <header class="panel-head">
+                <h1 class="panel-title">ジョブ</h1>
+                <button class="text-btn hidden" id="to-admin" data-act="admin">
+                    すべてのジョブ
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+                </button>
+                <button class="icon-btn" data-act="close" aria-label="閉じる">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+                </button>
+            </header>
+
+            <!-- いまのジョブの職員証 -->
+            <article id="badge" class="badge">
+                <div class="badge-band"><span class="badge-slot"></span></div>
+                <div class="badge-body">
+                    <div class="badge-top">
+                        <span class="badge-kicker">所属</span>
+                        <span class="badge-id num" id="b-id"></span>
+                    </div>
+                    <div class="badge-name" id="b-name"></div>
+                    <div class="badge-grade" id="b-grade"></div>
+                    <div class="badge-pay"><span class="badge-kicker">給料</span><span class="num" id="b-pay"></span></div>
+                    <div class="badge-foot" id="b-foot">
+                        <span class="duty"><span class="lamp" id="b-lamp"></span><span id="b-duty"></span></span>
+                        <button class="btn" id="b-duty-btn" data-act="duty"><span id="b-duty-label"></span><kbd>D</kbd></button>
+                    </div>
+                </div>
+            </article>
+
+            <div class="section-head">
+                <span>持っているジョブ</span>
+                <span class="num" id="held-count"></span>
+            </div>
+            <ul class="rows" id="rows"></ul>
+
+            <footer class="panel-foot">
+                <div class="keys">
+                    <kbd>↑</kbd><kbd>↓</kbd><span>選ぶ</span>
+                    <kbd>Enter</kbd><span>切り替える</span>
+                    <kbd>J</kbd><span>閉じる</span>
+                </div>
+            </footer>
+        </section>
+
+        <!-- すべてのジョブ（管理者） -->
+        <section id="admin" class="panel wide hidden" aria-label="すべてのジョブ">
+            <header class="panel-head">
+                <button class="icon-btn" data-act="back" aria-label="戻る">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+                </button>
+                <h1 class="panel-title">すべてのジョブ</h1>
+                <span class="panel-meta num" id="a-count"></span>
+                <button class="icon-btn" data-act="close" aria-label="閉じる">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+                </button>
+            </header>
+            <label class="search">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+                <input id="a-search" type="text" placeholder="検索" autocomplete="off" spellcheck="false">
+            </label>
+            <div class="admin-list" id="a-list"></div>
+            <footer class="panel-foot">
+                <span class="note" id="a-note">自分がこのジョブに就きます。持っているジョブの数に入ります</span>
+            </footer>
+        </section>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

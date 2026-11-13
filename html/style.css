@@ -1,0 +1,649 @@
+/* ta-jobswitch の NUI
+   方向: 職員証とタイムカード。画面は落ち着いた灰色（ta-fishing と同じ土台）
+   色を持つのは、いまのジョブの職員証の帯だけ。帯の色はジョブの種類を表す
+   決まった印は出勤ランプ（緑の点＝出勤中、輪郭だけ＝退勤中）。職員証と、いまのジョブの行にだけ出す */
+
+:root {
+    --font: 'Yu Gothic UI', 'Meiryo UI', 'Noto Sans JP', sans-serif;
+    --mono: 'Cascadia Mono', 'Consolas', ui-monospace, monospace;
+
+    --surface: #17191c;
+    --card: #1c1f22;
+    --raised: #1f2226;
+    --raised-hover: #272b30;
+    --hairline: rgba(232, 236, 240, 0.08);
+    --hairline-strong: rgba(232, 236, 240, 0.12);
+
+    --text: #e8ebee;
+    --text-2: #a3abb3;
+    --muted: #7a828a;
+
+    --positive: #4cc38a;
+    --negative: #e5484d;
+    --negative-text: #f0868a;
+
+    --band: #7d8792; /* 職員証の帯。app.js がジョブの種類の色を入れる */
+
+    /* 大きさの倍率。app.js が「画面の高さ / 1080 × config の倍率」を入れる */
+    --scale: 1;
+
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --dur-fast: 150ms;
+    --dur-menu: 200ms;
+    --dur-enter: 320ms;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: transparent;
+    font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.num {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+button {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: 0;
+    cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible {
+    outline: 2px solid rgba(232, 236, 240, 0.5);
+    outline-offset: 2px;
+}
+
+svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    background: var(--raised);
+    border: 1px solid var(--hairline-strong);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    font-family: var(--font);
+    font-size: 11px;
+    line-height: 1;
+    color: var(--text-2);
+}
+
+/* ================== 置き場所 ================== */
+
+/* 画面の中央 */
+.dock {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(var(--scale));
+    transform-origin: center;
+}
+
+.panel {
+    width: 360px;
+    padding: 12px;
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 20px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.32);
+    animation: enter var(--dur-enter) var(--ease) both;
+}
+
+.panel.wide {
+    width: 560px;
+}
+
+@keyframes enter {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+}
+
+.panel.busy [data-act],
+.panel.busy .row {
+    pointer-events: none;
+}
+
+/* ================== 見出し ================== */
+
+.panel-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    padding: 0 4px 0 8px;
+    margin-bottom: 8px;
+}
+
+.panel-head .icon-btn:first-child {
+    margin-left: -4px;
+}
+
+.panel-title {
+    flex: 1;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1;
+}
+
+.panel-meta {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    color: var(--muted);
+    transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.icon-btn:hover {
+    background: var(--raised-hover);
+    color: var(--text);
+}
+
+/* ================== 職員証 ================== */
+
+.badge {
+    overflow: hidden;
+    background: var(--card);
+    border: 1px solid var(--hairline-strong);
+    border-radius: 8px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* 上の色帯と、ストラップを通す穴 */
+.badge-band {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 24px;
+    background: var(--band);
+    transition: background-color var(--dur-menu) var(--ease);
+}
+
+.badge-slot {
+    width: 36px;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--surface);
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.4);
+}
+
+.badge-body {
+    padding: 16px;
+}
+
+.badge-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 16px;
+    margin-bottom: 4px;
+}
+
+.badge-kicker {
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--muted);
+}
+
+.badge-id {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.badge-name {
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 28px;
+}
+
+.badge-grade {
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--text-2);
+}
+
+.badge-pay {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--text-2);
+}
+
+.badge-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 28px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--hairline);
+    box-sizing: content-box;
+}
+
+.duty {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-2);
+}
+
+/* 出勤ランプ */
+.lamp {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 4px;
+    border: 1.5px solid var(--muted);
+    transition: background-color var(--dur-menu) var(--ease), border-color var(--dur-menu) var(--ease), box-shadow var(--dur-menu) var(--ease);
+}
+
+.lamp.on {
+    background: var(--positive);
+    border-color: var(--positive);
+    box-shadow: 0 0 0 3px rgba(76, 195, 138, 0.16);
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 28px;
+    padding: 0 6px 0 10px;
+    background: var(--raised-hover);
+    border: 1px solid var(--hairline-strong);
+    border-radius: 6px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    font-size: 13px;
+    transition: background-color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+}
+
+.btn:hover {
+    background: #30353b;
+}
+
+.btn:active {
+    transform: scale(0.97);
+}
+
+.btn kbd {
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    background: var(--surface);
+}
+
+.btn.plain {
+    padding: 0 10px;
+}
+
+/* ================== 持っているジョブ ================== */
+
+.section-head {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 8px;
+    margin: 16px 0 8px;
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--muted);
+}
+
+.rows {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 44px;
+    padding: 0 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease);
+}
+
+.row:hover {
+    background: var(--raised);
+}
+
+.row.sel {
+    background: var(--raised-hover);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.row-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.row-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    line-height: 20px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.row-sub {
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.row.confirm .row-sub {
+    color: var(--negative-text);
+}
+
+.row-pay {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+/* 外すボタン。行に乗ったとき・選んだときだけ見せる（場所はいつも取っておく） */
+.row .icon-btn {
+    opacity: 0;
+    transition: opacity var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.row:hover .icon-btn,
+.row.sel .icon-btn,
+.row.confirm .icon-btn {
+    opacity: 1;
+}
+
+.row.confirm .icon-btn {
+    background: rgba(229, 72, 77, 0.14);
+    color: var(--negative-text);
+}
+
+.row .spacer {
+    width: 28px;
+    flex: none;
+}
+
+/* ================== 下の操作の案内 ================== */
+
+.panel-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 44px;
+    margin-top: 12px;
+    padding: 12px 8px 0;
+    border-top: 1px solid var(--hairline);
+}
+
+.keys {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+.keys span {
+    margin: 0 8px 0 4px;
+}
+
+.keys span:last-child {
+    margin-right: 0;
+}
+
+.text-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 28px;
+    padding: 0 4px 0 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+    font-size: 13px;
+    color: var(--text-2);
+    transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.text-btn:hover {
+    background: var(--raised-hover);
+    color: var(--text);
+}
+
+.note {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.note.error {
+    color: var(--negative-text);
+}
+
+/* ================== すべてのジョブ（管理者） ================== */
+
+.search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    padding: 0 12px;
+    background: var(--raised);
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    color: var(--muted);
+}
+
+.search input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    background: none;
+    border: 0;
+    outline: none;
+    font: inherit;
+    font-size: 14px;
+    color: var(--text);
+}
+
+.search input::placeholder {
+    color: var(--muted);
+}
+
+.admin-list {
+    max-height: 520px;
+    margin: 0 -4px;
+    padding: 0 4px;
+    overflow-y: auto;
+}
+
+.admin-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.admin-list::-webkit-scrollbar-thumb {
+    background: var(--hairline-strong);
+    border-radius: 4px;
+}
+
+.group-label {
+    padding: 0 8px;
+    margin: 16px 0 4px;
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--muted);
+}
+
+.job {
+    border-radius: 8px;
+    transition: background-color var(--dur-fast) var(--ease);
+}
+
+.job.open {
+    background: var(--card);
+    box-shadow: inset 0 0 0 1px var(--hairline);
+}
+
+.job-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    height: 40px;
+    padding: 0 8px;
+    border-radius: 8px;
+    text-align: left;
+    transition: background-color var(--dur-fast) var(--ease);
+}
+
+.job:not(.open) .job-head:hover {
+    background: var(--raised);
+}
+
+/* 種類の色（職員証の帯と同じ意味の小さな印） */
+.chip {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+}
+
+.job-name {
+    font-size: 14px;
+}
+
+.job-key {
+    flex: 1;
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.job-held {
+    font-size: 12px;
+    color: var(--text-2);
+}
+
+.job-head .chev {
+    color: var(--muted);
+    transition: transform var(--dur-menu) var(--ease);
+}
+
+.job.open .chev {
+    transform: rotate(180deg);
+}
+
+.grades {
+    list-style: none;
+    padding: 0 8px 8px 28px;
+}
+
+.grade {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 36px;
+    padding-left: 4px;
+    border-top: 1px solid var(--hairline);
+}
+
+.grade-level {
+    width: 16px;
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.grade-name {
+    flex: 1;
+    font-size: 14px;
+}
+
+.grade-boss {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.grade-pay {
+    width: 72px;
+    text-align: right;
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.grade-act {
+    display: flex;
+    justify-content: flex-end;
+    width: 72px;
+}
+
+.grade-act .now {
+    font-size: 12px;
+    color: var(--text-2);
+}
+
+.empty {
+    padding: 24px 8px;
+    font-size: 13px;
+    color: var(--muted);
+    text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .panel {
+        animation: none;
+    }
+}
